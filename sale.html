@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create Invoice</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .split{display:flex;gap:12px}
+    .split > div{flex:1}
+    @media(max-width:820px){.split{flex-direction:column}}
+    .box{border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:#fff}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a href="index.html">Back</a>
+      <div class="title">Create Invoice</div>
+      <div></div>
+    </div>
+
+    <div class="split">
+      <div class="box">
+        <div class="row">
+          <div style="flex:1">
+            <div class="sub">Quotation No</div>
+            <input id="quotationNo" class="input" placeholder="Q26-Feb-001">
+          </div>
+          <div style="flex:1">
+            <div class="sub">Invoice Date</div>
+            <input id="invoiceDate" class="input" type="date">
+          </div>
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <button class="btn dark" onclick="loadQuotation()">Load Quotation</button>
+          <button class="btn orange" onclick="convert()">Create Invoice</button>
+        </div>
+
+        <div id="msg" class="sub" style="margin-top:10px"></div>
+      </div>
+
+      <div class="box">
+        <div class="sub">Invoice No (auto)</div>
+        <div style="font-size:20px;font-weight:900" id="invoiceNo">-</div>
+        <div class="sub" style="margin-top:8px">Customer</div>
+        <div style="font-weight:900" id="cust">-</div>
+        <div class="sub" id="cust2">-</div>
+        <div style="margin-top:10px;font-weight:900">Final Amount: <span id="final">0.00</span></div>
+      </div>
+    </div>
+
+    <div class="desktop-only">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Sr</th><th>Code</th><th>Size</th><th>Surface</th><th>Qty</th><th>Price</th><th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="items"></tbody>
+      </table>
+    </div>
+
+    <div class="mobile-list" id="mItems" style="margin-top:12px;display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <div id="toast" class="toast">Done</div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+  <script>
+    let qData = null;
+
+    function setDefault(){
+      document.getElementById("invoiceDate").value = todayISO();
+      const qp = new URLSearchParams(location.search);
+      const qno = qp.get("quotationNo");
+      if(qno) document.getElementById("quotationNo").value = qno;
+    }
+
+    async function loadInvoiceNo(){
+      const r = await apiGet({action:"nextInvoiceNo"});
+      if(r && r.ok) document.getElementById("invoiceNo").textContent = r.data || "-";
+    }
+
+    function renderItems(items){
+      const tb = document.getElementById("items");
+      tb.innerHTML = "";
+      const ml = document.getElementById("mItems");
+      ml.innerHTML = "";
+
+      (items||[]).forEach(it=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td style="text-align:center">${it.srNo||""}</td>
+          <td>${it.productCode||""}<div class="sub">${it.designName||""}</div></td>
+          <td>${it.size||""}</td>
+          <td>${it.surface||""}</td>
+          <td style="text-align:right">${it.qty||0}</td>
+          <td style="text-align:right">${fmt2(it.discountedPrice||0)}</td>
+          <td style="text-align:right">${fmt2((Number(it.qty||0)*Number(it.discountedPrice||0))||0)}</td>
+        `;
+        tb.appendChild(tr);
+
+        const div = document.createElement("div");
+        div.className="card";
+        div.innerHTML = `
+          <div class="row" style="justify-content:space-between">
+            <div><b>${it.productCode||""}</b><div class="sub">${it.designName||""}</div></div>
+            <div style="font-weight:900">${fmt2((Number(it.qty||0)*Number(it.discountedPrice||0))||0)}</div>
+          </div>
+          <div class="sub" style="margin-top:6px">${it.size||""} • ${it.surface||""}</div>
+          <div class="sub">Qty: ${it.qty||0} • Price: ${fmt2(it.discountedPrice||0)}</div>
+        `;
+        ml.appendChild(div);
+      });
+    }
+
+    async function loadQuotation(){
+      try{
+        const qno = document.getElementById("quotationNo").value.trim();
+        if(!qno) return notify("Enter quotation no", false);
+
+        const r = await apiPost({action:"quotationData", quotationNo:qno});
+        if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Failed");
+
+        qData = r.data;
+        document.getElementById("cust").textContent = qData.header.customerName || "-";
+        document.getElementById("cust2").textContent = (qData.header.mobile||"") + "  " + (qData.header.town||"");
+        document.getElementById("final").textContent = fmt2(qData.header.finalAmount||0);
+        renderItems(qData.items||[]);
+
+        // show status
+        document.getElementById("msg").textContent = "Status: " + (qData.header.status||"");
+        notify("Quotation loaded");
+      }catch(e){
+        console.error(e);
+        notify("Load error: " + e.message, false);
+      }
+    }
+
+    async function convert(){
+      try{
+        const qno = document.getElementById("quotationNo").value.trim();
+        const invoiceDate = document.getElementById("invoiceDate").value || todayISO();
+        const invoiceNo = document.getElementById("invoiceNo").textContent;
+
+        if(!qno) return notify("Enter quotation no", false);
+
+        const r = await apiPost({action:"convertToInvoice", quotationNo:qno, invoiceDate:invoiceDate});
+        if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Failed");
+
+        notify("Invoice created: " + r.data.invoiceNo);
+        document.getElementById("invoiceNo").textContent = r.data.invoiceNo;
+
+      }catch(e){
+        console.error(e);
+        notify("Convert error: " + e.message, false);
+      }
+    }
+
+    setDefault();
+    loadInvoiceNo();
+    // auto load if qno provided
+    setTimeout(loadQuotation, 200);
+  </script>
+</body>
+</html>

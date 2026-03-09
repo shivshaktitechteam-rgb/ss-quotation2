@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quotations</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <a href="index.html">Back</a>
+      <div class="title">Quotations</div>
+      <button class="btn ghost" onclick="loadList()">Refresh</button>
+    </div>
+
+    <div class="row">
+      <select id="statusFilter" class="input" onchange="render()">
+        <option value="">All Status</option>
+        <option value="Draft">Draft</option>
+        <option value="Pending">Pending</option>
+        <option value="Converted">Converted</option>
+        <option value="Cancelled">Cancelled</option>
+        <option value="Expired">Expired</option>
+      </select>
+      <input id="search" class="input" placeholder="Search quotation/customer/mobile" oninput="render()">
+      <a class="btn green" href="quotation.html">+ New</a>
+    </div>
+
+    <div class="desktop-only">
+      <table class="table" id="tbl">
+        <thead>
+          <tr>
+            <th>Quotation No</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Town</th>
+            <th>Final</th>
+            <th>Status</th>
+            <th>Invoice</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="mobile-list" id="mList" style="margin-top:12px;display:flex;flex-direction:column;gap:10px;"></div>
+  </div>
+
+  <div id="toast" class="toast">Done</div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+  <script>
+    let data = [];
+
+    async function loadList(){
+      try{
+        const r = await apiGet({action:"quotations", days:"30"});
+        if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Failed");
+        data = Array.isArray(r.data) ? r.data : [];
+        render();
+        notify("Loaded " + data.length + " quotations");
+      }catch(e){
+        console.error(e);
+        notify("Load error: " + e.message, false);
+      }
+    }
+
+    function render(){
+      const s = document.getElementById("statusFilter").value.trim().toLowerCase();
+      const q = document.getElementById("search").value.trim().toLowerCase();
+
+      const rows = data.filter(x=>{
+        const st = String(x.status||"").toLowerCase();
+        const okS = !s || st === s;
+        const blob = (String(x.quotationNo||"")+" "+String(x.customerName||"")+" "+String(x.mobile||"")).toLowerCase();
+        const okQ = !q || blob.includes(q);
+        return okS && okQ;
+      });
+
+      // desktop
+      const tb = document.getElementById("tbody");
+      tb.innerHTML = "";
+      rows.forEach(r=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td><b>${r.quotationNo||""}</b></td>
+          <td>${r.date||""}</td>
+          <td>${r.customerName||""}<div class="sub">${r.mobile||""}</div></td>
+          <td>${r.town||""}</td>
+          <td style="text-align:right">${fmt2(r.finalAmount||0)}</td>
+          <td style="text-align:center"><span class="badge ${badgeClass(r.status)}">${r.status||""}</span></td>
+          <td style="text-align:center">${r.invoiceNo||""}</td>
+          <td>
+            <button class="btn ghost" onclick="openQuote('${r.quotationNo}')">Open</button>
+            <button class="btn ghost" onclick="setStatus('${r.quotationNo}','Pending')">Pending</button>
+            <button class="btn red" onclick="setStatus('${r.quotationNo}','Cancelled')">Cancel</button>
+            <button class="btn orange" onclick="convert('${r.quotationNo}')" ${String(r.status||"").toLowerCase()==="converted" ? "disabled" : ""}>Convert</button>
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
+
+      // mobile
+      const ml = document.getElementById("mList");
+      ml.innerHTML = "";
+      rows.forEach(r=>{
+        const div = document.createElement("div");
+        div.className = "card";
+        div.innerHTML = `
+          <div class="row" style="justify-content:space-between">
+            <div><b>${r.quotationNo||""}</b><div class="sub">${r.date||""}</div></div>
+            <span class="badge ${badgeClass(r.status)}">${r.status||""}</span>
+          </div>
+          <div style="margin-top:8px">
+            <div><b>${r.customerName||""}</b> <span class="sub">${r.mobile||""}</span></div>
+            <div class="sub">${r.town||""}</div>
+            <div style="margin-top:6px;font-weight:900">Final: ${fmt2(r.finalAmount||0)}</div>
+            <div class="sub">Invoice: ${r.invoiceNo||"-"}</div>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="btn ghost" onclick="openQuote('${r.quotationNo}')">Open</button>
+            <button class="btn ghost" onclick="setStatus('${r.quotationNo}','Pending')">Pending</button>
+            <button class="btn red" onclick="setStatus('${r.quotationNo}','Cancelled')">Cancel</button>
+            <button class="btn orange" onclick="convert('${r.quotationNo}')" ${String(r.status||"").toLowerCase()==="converted" ? "disabled" : ""}>Convert</button>
+          </div>
+        `;
+        ml.appendChild(div);
+      });
+    }
+
+    function openQuote(qno){
+      location.href = "quotation.html?quotationNo=" + encodeURIComponent(qno);
+    }
+
+    async function setStatus(qno, status){
+      if(status==="Cancelled"){
+        if(!confirm("Cancel quotation " + qno + " ?")) return;
+      }
+      try{
+        const r = await apiPost({action:"updateQuotationStatus", quotationNo:qno, status:status});
+        if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Failed");
+        await loadList();
+        notify("Updated: " + qno + " → " + status);
+      }catch(e){
+        console.error(e);
+        notify("Status error: " + e.message, false);
+      }
+    }
+
+    function convert(qno){
+      location.href = "sale.html?quotationNo=" + encodeURIComponent(qno);
+    }
+
+    loadList();
+  </script>
+</body>
+</html>

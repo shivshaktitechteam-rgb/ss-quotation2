@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Business Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div>
+        <div class="title">Shivshakti Marble & Granite</div>
+        <div class="sub">Phase 1 Dashboard (Quotation → Invoice → Dispatch)</div>
+      </div>
+      <button class="btn ghost" onclick="loadDashboard()">Refresh</button>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="label">Quotations (Last 30 Days)</div>
+        <div class="value" id="q_total">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Pending Quotations</div>
+        <div class="value" id="q_pending">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Converted Quotations</div>
+        <div class="value" id="q_converted">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Cancelled / Expired</div>
+        <div class="value" id="q_cancelled">0</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Invoices (Last 30 Days)</div>
+        <div class="value" id="s_total">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Sales Amount (Last 30 Days)</div>
+        <div class="value" id="s_amount">0.00</div>
+      </div>
+      <div class="card">
+        <div class="label">Dispatch Delayed</div>
+        <div class="value" id="d_delayed">0</div>
+      </div>
+      <div class="card">
+        <div class="label">Dispatch On-time (Delivered)</div>
+        <div class="value" id="d_ontime">0</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <a class="btn green" href="quotation.html">+ New Quotation</a>
+      <a class="btn dark" href="quotations.html">Quotations</a>
+      <a class="btn orange" href="sale.html">Create Invoice</a>
+      <a class="btn blue" href="dispatch.html">Dispatch</a>
+    </div>
+
+    <div class="sub" style="margin-top:12px">Last updated: <span id="updatedAt">-</span></div>
+  </div>
+
+  <div id="toast" class="toast">Done</div>
+
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+  <script>
+    async function loadDashboard(){
+      try{
+        const r = await apiGet({action:"dashboard"});
+        if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Failed");
+        const d = r.data || {};
+        document.getElementById("q_total").textContent = d.quotes_last30_total || 0;
+        document.getElementById("q_pending").textContent = d.quotes_pending || 0;
+        document.getElementById("q_converted").textContent = d.quotes_converted || 0;
+        document.getElementById("q_cancelled").textContent = (d.quotes_cancelled || 0) + (d.quotes_expired || 0);
+        document.getElementById("s_total").textContent = d.invoices_last30_total || 0;
+        document.getElementById("s_amount").textContent = fmt2(d.invoices_last30_amount || 0);
+        document.getElementById("d_delayed").textContent = d.dispatch_delayed || 0;
+        document.getElementById("d_ontime").textContent = d.dispatch_ontime || 0;
+        document.getElementById("updatedAt").textContent = new Date().toLocaleString();
+        notify("Dashboard updated");
+      }catch(e){
+        console.error(e);
+        notify("Dashboard error: " + e.message, false);
+      }
+    }
+    loadDashboard();
+  </script>
+</body>
+</html>
