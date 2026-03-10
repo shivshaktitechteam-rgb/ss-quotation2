@@ -1,22 +1,680 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Quotation Test</title>
+  <title>Quotation</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f7f7f7; }
+    .container { max-width: 1200px; margin: 20px auto; background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 0 10px rgba(0,0,0,0.10); }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; }
+    .back { color:#0b5ed7; text-decoration:none; font-size:14px; font-weight:700; }
+    h1 { text-align: center; margin: 6px 0 4px; font-size: 26px; font-weight: 800; }
+    .company-header { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 12px; font-weight: 600; gap:16px; }
+    .company-left { width: 44%; line-height: 1.6; }
+    .company-right { width: 56%; text-align: right; line-height: 1.6; }
+    h2 { text-align: center; margin: 6px 0 12px; font-size: 18px; font-weight: bold; color: #333; }
+
+    .top-section { display: flex; justify-content: space-between; margin-bottom: 14px; gap: 20px; }
+    .left, .right { width: 48%; }
+    .info-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; gap: 10px; }
+    .info-row label { font-weight: bold; font-size: 13px; flex: 0 0 40%; text-align: left; }
+    .info-row input { flex: 1; padding: 8px 10px; border: 1px solid #ccc; border-radius: 8px; font-size: 13px; height: 34px; box-sizing: border-box; }
+
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-top: 12px; }
+    th, td { border: 1px solid #ccc; padding: 6px 8px; vertical-align: middle; font-size: 13px; line-height: 1.3; white-space: normal; word-wrap: break-word; }
+    th { background: #f0f0f0; text-align: center; white-space: nowrap; }
+    td { text-align: left; }
+    td.srno { text-align: center; width: 50px; }
+
+    .ce { display: block; width: 100%; min-height: 28px; border: 1px solid #ccc; border-radius: 8px; padding: 6px 8px; box-sizing: border-box; white-space: normal; outline: none; background:#fff; }
+    .ce.readonly { background: #f9f9f9; pointer-events: none; }
+
+    .btn { padding: 8px 12px; border: none; border-radius: 10px; cursor: pointer; margin: 5px 6px 0 0; font-size: 13px; font-weight:700; }
+    .btn-save { background: #f59e0b; color: #fff; }
+    .btn-add { background: #28a745; color: #fff; }
+    .btn-remove { background: #dc3545; color: #fff; }
+    .btn-print { background: #007bff; color: #fff; }
+
+    .summary-row { font-weight: bold; }
+    .discount-cell { text-align: right; font-weight: bold; }
+    .discount-input { width: 100%; text-align: right; padding: 6px; font-size: 13px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; height:34px; }
+
+    .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; background: white; z-index: 999; display: none; border-radius: 10px; box-shadow:0 10px 22px rgba(0,0,0,.12) }
+    .autocomplete-item { padding: 8px 10px; cursor: pointer; font-size: 13px; }
+    .autocomplete-item:hover { background: #f0f0f0; }
+
+    .terms { margin-top: 18px; font-size: 14px; }
+
+    .toast { position: fixed; right: 20px; bottom: 20px; max-width: 360px; padding: 10px 14px; border-radius: 10px; background: #16a34a; color: #fff; font-size: 14px; line-height: 1.4; box-shadow: 0 8px 24px rgba(0,0,0,0.15); opacity: 0; transform: translateY(10px); pointer-events: none; transition: opacity .18s ease, transform .18s ease; z-index: 9999; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    .mobile-only { display:none; }
+    .desktop-only { display:block; }
+
+    .mcard { border:1px solid #e5e5e5; border-radius:12px; padding:12px; background:#fff; }
+    .mgrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+    .mgrid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:10px; }
+    .mlabel { font-size:12px; color:#666; font-weight:700; display:block; }
+    .minput { width:100%; padding:10px; border:1px solid #ccc; border-radius:10px; font-size:14px; box-sizing:border-box; }
+    .mrow { display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .mbtnbar { position:fixed; left:0; right:0; bottom:0; background:#fff; border-top:1px solid #e5e5e5; padding:10px; display:none; }
+    .mbtnbar .btn { width:32%; margin:0; border-radius:12px; padding:12px 10px; }
+
+    @media (max-width: 820px) {
+      .container { margin: 0; border-radius: 0; }
+      .company-header { flex-direction: column; }
+      .company-left, .company-right { width: 100%; text-align: left; }
+      .top-section { flex-direction: column; }
+      .left, .right { width: 100%; }
+      .desktop-only { display:none; }
+      .mobile-only { display:block; }
+      .mbtnbar { display:flex; justify-content:space-between; gap:10px; }
+      body { padding-bottom: 86px; }
+    }
+
+    @media print {
+      body { background: #fff; padding-bottom:0; }
+      .topbar { display:none !important; }
+      .btn, button, input[type="file"] { display: none !important; }
+      th:last-child, td:last-child { display: none !important; }
+      .ce, input, select { border: none; background: transparent; pointer-events: none; }
+      table { table-layout: auto !important; width: 100% !important; }
+      .toast, .mbtnbar { display: none !important; }
+      .mobile-only { display:none !important; }
+      .desktop-only { display:block !important; }
+    }
+  </style>
 </head>
 <body>
-  <h2>Quotation Test Page</h2>
+  <div class="container">
+    <div class="topbar">
+      <a class="back" href="index.html">Back</a>
+      <div style="font-size:14px;color:#666;font-weight:700">Quotation</div>
+      <div></div>
+    </div>
 
-  <button onclick="addRow()">Add Item</button>
-  <button onclick="saveQuotation()">Save</button>
-  <button onclick="doPrint()">Print</button>
+    <h1>Shivshakti Marble & Granite</h1>
+    <div class="company-header">
+      <div class="company-left">
+        <div><strong>GSTIN:</strong> 27AGUPK4950E1Z1</div>
+        <div><strong>Email:</strong> shivshaktilonik@yahoo.com</div>
+        <div><strong>Mobile No:</strong> 8568057777</div>
+      </div>
+      <div class="company-right">
+        <div><strong>Address:</strong> Gat No 32, Pune Solapur Road,<br>Opp. RamaKrishna Rasayan, Loni Kalbhor,<br>Tal: Haveli, Pune, Maharashtra – 412201</div>
+      </div>
+    </div>
+    <h2>Quotation</h2>
 
+    <div class="top-section">
+      <div class="left">
+        <div class="info-row"><label>Customer Name</label><input type="text" id="customerName"></div>
+        <div class="info-row"><label>Mobile Number</label><input type="text" id="customerMobile"></div>
+        <div class="info-row"><label>Town</label><input type="text" id="town"></div>
+        <div class="info-row"><label>Date</label><input type="date" id="quotationDate"></div>
+      </div>
+      <div class="right">
+        <div class="info-row"><label>Quotation No</label><input type="text" id="quotationNo" readonly></div>
+        <div class="info-row"><label>Reference By</label><input type="text" id="referenceBy"></div>
+        <div class="info-row"><label>Sales Person</label><input type="text" id="salesPerson"></div>
+        <div class="info-row"><label>Mobile No</label><input type="text" id="salesMobile"></div>
+      </div>
+    </div>
+
+    <div class="desktop-only">
+      <table id="itemsTable">
+        <thead>
+          <tr>
+            <th>Sr. No</th>
+            <th>Name Code</th>
+            <th>Size</th>
+            <th>Surface</th>
+            <th>MRP</th>
+            <th>Quantity</th>
+            <th>Discount (%)</th>
+            <th>Discounted Price</th>
+            <th>Total</th>
+            <th>Comment</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="itemsBody">
+          <tr class="summary-row" id="row-total">
+            <td colspan="9" style="text-align:right;">Total:</td><td id="totalAmount">0</td><td></td>
+          </tr>
+          <tr class="summary-row" id="row-discount">
+            <td colspan="9" class="discount-cell">
+              Special Discount:
+              <select id="discountType">
+                <option value="flat">Flat</option>
+                <option value="percent">%</option>
+              </select>
+            </td>
+            <td><input type="number" id="specialDiscount" value="0" class="discount-input"></td><td></td>
+          </tr>
+          <tr class="summary-row" id="row-final">
+            <td colspan="9" style="text-align:right;">Final Amount:</td><td id="finalAmount">0</td><td></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button class="btn btn-add" id="btnAddRow">+ Add Item</button>
+      <button class="btn btn-save" id="btnSave">Save Quotation</button>
+      <button class="btn btn-print" id="btnPrint">Print Quotation</button>
+    </div>
+
+    <div class="mobile-only">
+      <div id="mItems" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+      <div class="mcard" style="margin-top:12px;">
+        <div class="mrow" style="font-weight:800">
+          <div>Total</div><div id="mTotalAmount">0.00</div>
+        </div>
+
+        <div class="mgrid" style="margin-top:12px;">
+          <div>
+            <span class="mlabel">Special Discount Type</span>
+            <select id="mDiscountType" class="minput">
+              <option value="flat">Flat</option>
+              <option value="percent">%</option>
+            </select>
+          </div>
+          <div>
+            <span class="mlabel">Special Discount</span>
+            <input id="mSpecialDiscount" class="minput" type="number" value="0" step="0.01">
+          </div>
+        </div>
+
+        <div class="mrow" style="margin-top:12px;font-weight:800">
+          <div>Final Amount</div><div id="mFinalAmount">0.00</div>
+        </div>
+
+        <div id="mMsg" style="margin-top:10px;font-size:13px;"></div>
+      </div>
+    </div>
+
+    <div class="terms">
+      <strong>Terms & Conditions:</strong>
+      <ol>
+        <li>Payment 100% advanced.</li>
+        <li>2% Breakage mandatory.</li>
+        <li>Rates are inclusive of GST.</li>
+        <li>Goods once sold will not be taken back or exchanged.</li>
+        <li>Delivery within 10–12 days as per material availability.</li>
+        <li>Local transport, loading & unloading extra at actual.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="mbtnbar">
+    <button class="btn btn-add" id="mBtnAdd">Add</button>
+    <button class="btn btn-save" id="mBtnSave">Save</button>
+    <button class="btn btn-print" id="mBtnPrint">Print</button>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite">Saved</div>
+
+  <script src="api.js"></script>
   <script>
-    function addRow(){ alert("Add working"); }
-    function saveQuotation(){ alert("Save working"); }
-    function doPrint(){ window.print(); }
-    console.log("TEST QUOTATION FILE LOADED OK");
+    console.log("Quotation page loaded: SAFE_FULL_VERSION_2026-03-10_01");
+
+    // ---- Globals
+    let sheetData = [];
+    let rawMap = new Map();
+
+    const itemsBody = document.getElementById("itemsBody");
+    const totalAmountEl = document.getElementById("totalAmount");
+    const finalAmountEl = document.getElementById("finalAmount");
+    const specialDiscountEl = document.getElementById("specialDiscount");
+    const discountTypeEl = document.getElementById("discountType");
+
+    const mItems = document.getElementById("mItems");
+    const mTotalAmountEl = document.getElementById("mTotalAmount");
+    const mFinalAmountEl = document.getElementById("mFinalAmount");
+    const mSpecialDiscountEl = document.getElementById("mSpecialDiscount");
+    const mDiscountTypeEl = document.getElementById("mDiscountType");
+    const mMsgEl = document.getElementById("mMsg");
+
+    function notify(message, timeout = 2500) {
+      const t = document.getElementById("toast");
+      t.textContent = message;
+      t.className = "toast show";
+      clearTimeout(notify._hide);
+      notify._hide = setTimeout(() => { t.className = "toast"; }, timeout);
+    }
+
+    function isMobileView() {
+      return window.matchMedia("(max-width: 820px)").matches;
+    }
+
+    async function loadRawData() {
+      const r = await apiGet({ action: "raw" });
+      sheetData = (r && r.ok && Array.isArray(r.data)) ? r.data : [];
+      rawMap = new Map();
+      sheetData.forEach(d => {
+        if (!d || !d.name) return;
+        rawMap.set(String(d.name).trim().toLowerCase(), d);
+      });
+    }
+
+    async function initHeader() {
+      document.getElementById("quotationDate").value = new Date().toISOString().slice(0, 10);
+      const urlParams = new URLSearchParams(location.search);
+      const qno = urlParams.get("quotationNo");
+      if (qno) {
+        document.getElementById("quotationNo").value = qno;
+      } else {
+        const r = await apiGet({ action: "nextQuotationNo" });
+        if (r && r.ok) document.getElementById("quotationNo").value = r.data;
+      }
+    }
+
+    // ---------- Desktop rows
+    function updateRowNumbers() {
+      [...itemsBody.querySelectorAll("tr")]
+        .filter(r => !r.classList.contains("summary-row"))
+        .forEach((r, i) => r.querySelector(".srno").innerText = i + 1);
+    }
+
+    function addRow() {
+      const tr = document.createElement("tr");
+      const before = document.getElementById("row-total");
+      tr.innerHTML = `
+        <td class="srno"></td>
+        <td style="position:relative;">
+          <div class="ce name" contenteditable="true"></div>
+          <div class="autocomplete-list name-list"></div>
+        </td>
+        <td><div class="ce size" contenteditable="true"></div></td>
+        <td><div class="ce surface readonly"></div></td>
+        <td><div class="ce mrp" contenteditable="true"></div></td>
+        <td><div class="ce qty" contenteditable="true"></div></td>
+        <td><div class="ce disc" contenteditable="true"></div></td>
+        <td><div class="ce discounted readonly"></div></td>
+        <td><div class="ce total readonly">0</div></td>
+        <td><div class="ce rowcomment" contenteditable="true"></div></td>
+        <td><button class="btn btn-remove" type="button">Remove</button></td>
+      `;
+      itemsBody.insertBefore(tr, before);
+      tr.querySelector(".btn-remove").addEventListener("click", () => removeRow(tr));
+      updateRowNumbers();
+    }
+
+    function removeRow(tr) {
+      tr.remove();
+      updateRowNumbers();
+      calculateTotal();
+    }
+
+    function showSuggestions(el) {
+      const list = el.parentNode.querySelector(".autocomplete-list");
+      const val = el.innerText.trim().toLowerCase();
+      list.innerHTML = "";
+      if (!val) { list.style.display = "none"; return; }
+
+      const matches = sheetData.filter(d => String(d.name || "").toLowerCase().includes(val));
+      if (matches.length === 0) { list.style.display = "none"; return; }
+
+      const unique = [...new Set(matches.map(m => m.name))];
+      unique.slice(0, 10).forEach(itemVal => {
+        const item = document.createElement("div");
+        item.className = "autocomplete-item";
+        item.textContent = itemVal;
+        item.onclick = () => {
+          el.innerText = itemVal;
+          const match = rawMap.get(String(itemVal).toLowerCase());
+          if (match) {
+            const row = el.closest("tr");
+            const mrpNum = parseFloat((match.mrp || "0").toString().replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")) || 0;
+            row.querySelector(".surface").innerText = match.surface || "";
+            row.querySelector(".size").innerText = match.size || "";
+            row.querySelector(".mrp").innerText = mrpNum.toFixed(2);
+            updateCalculations(row);
+          }
+          list.style.display = "none";
+        };
+        list.appendChild(item);
+      });
+      list.style.display = "block";
+    }
+
+    function updateCalculations(row) {
+      const qty = parseFloat((row.querySelector(".qty").innerText || "0").replace(/,/g, "")) || 0;
+      const mrp = parseFloat((row.querySelector(".mrp").innerText || "0").replace(/,/g, "")) || 0;
+      const disc = parseFloat((row.querySelector(".disc").innerText || "0").replace(/,/g, "")) || 0;
+
+      const safeDisc = Math.min(100, Math.max(0, disc));
+      const discounted = Math.max(0, mrp - (mrp * safeDisc / 100));
+      row.querySelector(".discounted").innerText = discounted.toFixed(2);
+
+      const total = qty * discounted;
+      row.querySelector(".total").innerText = total.toFixed(2);
+
+      calculateTotal();
+    }
+
+    function calculateTotal() {
+      let t = 0;
+      [...itemsBody.querySelectorAll("tr")]
+        .filter(r => !r.classList.contains("summary-row"))
+        .forEach(r => t += parseFloat(r.querySelector(".total").innerText) || 0);
+      totalAmountEl.innerText = t.toFixed(2);
+      calculateFinal();
+    }
+
+    function calculateFinal() {
+      const total = parseFloat(totalAmountEl.innerText) || 0;
+      const disc = parseFloat(specialDiscountEl.value) || 0;
+      let final = total;
+      if (discountTypeEl.value === "flat") final -= disc;
+      else final -= total * disc / 100;
+      final = Math.max(0, final);
+      finalAmountEl.innerText = final.toFixed(2);
+
+      // sync to mobile summary
+      mTotalAmountEl.textContent = total.toFixed(2);
+      mDiscountTypeEl.value = discountTypeEl.value;
+      mSpecialDiscountEl.value = specialDiscountEl.value;
+      mFinalAmountEl.textContent = final.toFixed(2);
+    }
+
+    // Events for desktop inputs
+    itemsBody.addEventListener("input", e => {
+      const t = e.target;
+      const row = t.closest("tr");
+      if (!row || row.classList.contains("summary-row")) return;
+
+      if (t.classList.contains("name")) {
+        showSuggestions(t);
+        return;
+      }
+
+      if (t.classList.contains("qty") || t.classList.contains("disc") || t.classList.contains("mrp")) {
+        const original = t.innerText;
+        const cleaned = original.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
+        if (cleaned !== original) t.innerText = cleaned;
+        updateCalculations(row);
+      }
+    });
+
+    document.addEventListener("click", e => {
+      if (!e.target.classList.contains("autocomplete-item")) {
+        document.querySelectorAll(".autocomplete-list").forEach(l => l.style.display = "none");
+      }
+    });
+
+    discountTypeEl.addEventListener("change", calculateFinal);
+    specialDiscountEl.addEventListener("input", calculateFinal);
+
+    // ---------- Mobile cards
+    let mItemSeq = 0;
+
+    function mAddItem() {
+      mItemSeq += 1;
+      const card = document.createElement("div");
+      card.className = "mcard";
+      card.dataset.id = String(mItemSeq);
+      card.innerHTML = `
+        <div class="mrow">
+          <div style="font-weight:800">Item ${mItemSeq}</div>
+          <button class="btn btn-remove" type="button" style="padding:8px 10px;border-radius:10px;margin:0">Remove</button>
+        </div>
+
+        <div style="margin-top:10px;">
+          <span class="mlabel">Product Code</span>
+          <input class="minput m_code" placeholder="Type code">
+          <div class="autocomplete-list" style="position:relative;margin-top:6px;display:none"></div>
+        </div>
+
+        <div class="mgrid">
+          <div><span class="mlabel">Size</span><input class="minput m_size" readonly></div>
+          <div><span class="mlabel">Surface</span><input class="minput m_surface" readonly></div>
+        </div>
+
+        <div class="mgrid3">
+          <div><span class="mlabel">MRP</span><input class="minput m_mrp" type="number" step="0.01"></div>
+          <div><span class="mlabel">Qty</span><input class="minput m_qty" type="number" step="0.01"></div>
+          <div><span class="mlabel">Disc %</span><input class="minput m_disc" type="number" step="0.01"></div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <span class="mlabel">Comment</span>
+          <input class="minput m_comment" placeholder="Optional">
+        </div>
+
+        <div class="mrow" style="margin-top:12px;font-weight:800">
+          <div>Line Total</div><div class="m_lineTotal">0.00</div>
+        </div>
+      `;
+      mItems.appendChild(card);
+
+      const removeBtn = card.querySelector(".btn-remove");
+      removeBtn.addEventListener("click", () => { card.remove(); mCalcTotal(); });
+
+      const codeEl = card.querySelector(".m_code");
+      const listEl = card.querySelector(".autocomplete-list");
+
+      codeEl.addEventListener("input", () => {
+        const val = codeEl.value.trim().toLowerCase();
+        listEl.innerHTML = "";
+        if (!val) { listEl.style.display = "none"; return; }
+        const matches = sheetData.filter(d => String(d.name || "").toLowerCase().includes(val)).slice(0, 8);
+        if (matches.length === 0) { listEl.style.display = "none"; return; }
+        matches.forEach(m => {
+          const div = document.createElement("div");
+          div.className = "autocomplete-item";
+          div.textContent = m.name;
+          div.onclick = () => { codeEl.value = m.name; listEl.style.display = "none"; mFillFromRaw(card); };
+          listEl.appendChild(div);
+        });
+        listEl.style.display = "block";
+      });
+
+      codeEl.addEventListener("change", () => mFillFromRaw(card));
+      card.querySelectorAll(".m_mrp,.m_qty,.m_disc").forEach(el => el.addEventListener("input", () => mCalcLine(card)));
+
+      return card;
+    }
+
+    function mFillFromRaw(card) {
+      const code = String(card.querySelector(".m_code").value || "").trim().toLowerCase();
+      const m = rawMap.get(code);
+      if (!m) return;
+      card.querySelector(".m_size").value = m.size || "";
+      card.querySelector(".m_surface").value = m.surface || "";
+      const mrpNum = parseFloat((m.mrp || "0").toString().replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1")) || 0;
+      card.querySelector(".m_mrp").value = mrpNum.toFixed(2);
+      mCalcLine(card);
+    }
+
+    function mCalcLine(card) {
+      const mrp = parseFloat(card.querySelector(".m_mrp").value || "0") || 0;
+      const qty = parseFloat(card.querySelector(".m_qty").value || "0") || 0;
+      const disc = parseFloat(card.querySelector(".m_disc").value || "0") || 0;
+
+      const safeDisc = Math.min(100, Math.max(0, disc));
+      const discounted = Math.max(0, mrp - (mrp * safeDisc / 100));
+      const total = qty * discounted;
+
+      card.querySelector(".m_lineTotal").textContent = total.toFixed(2);
+      mCalcTotal();
+    }
+
+    function mCalcTotal() {
+      let sum = 0;
+      document.querySelectorAll(".m_lineTotal").forEach(el => sum += parseFloat(el.textContent || "0") || 0);
+      mTotalAmountEl.textContent = sum.toFixed(2);
+      mCalculateFinal();
+    }
+
+    function mCalculateFinal() {
+      const total = parseFloat(mTotalAmountEl.textContent || "0") || 0;
+      const disc = parseFloat(mSpecialDiscountEl.value || "0") || 0;
+      let final = total;
+      if (mDiscountTypeEl.value === "flat") final -= disc;
+      else final -= total * disc / 100;
+      final = Math.max(0, final);
+      mFinalAmountEl.textContent = final.toFixed(2);
+
+      // sync back to desktop summary
+      totalAmountEl.innerText = total.toFixed(2);
+      discountTypeEl.value = mDiscountTypeEl.value;
+      specialDiscountEl.value = mSpecialDiscountEl.value;
+      finalAmountEl.innerText = final.toFixed(2);
+    }
+
+    mDiscountTypeEl.addEventListener("change", mCalculateFinal);
+    mSpecialDiscountEl.addEventListener("input", mCalculateFinal);
+
+    // ---------- Save + Print
+    async function saveQuotation() {
+      const quotationNo = document.getElementById("quotationNo").value.trim();
+      const date = document.getElementById("quotationDate").value;
+      const customerName = document.getElementById("customerName").value.trim();
+      const mobile = document.getElementById("customerMobile").value.trim();
+      const town = document.getElementById("town").value.trim();
+      const reference = document.getElementById("referenceBy").value.trim();
+      const salesperson = document.getElementById("salesPerson").value.trim();
+      const salesMobile = document.getElementById("salesMobile").value.trim();
+
+      if (!quotationNo || !date || !customerName) {
+        const msg = "Please fill Quotation No, Date, Customer Name";
+        if (isMobileView()) { mMsgEl.textContent = msg; mMsgEl.style.color = "#b91c1c"; }
+        notify(msg);
+        return;
+      }
+
+      let items = [];
+      let totalAmount = 0;
+      let specialDiscountType = "flat";
+      let specialDiscountValue = 0;
+      let finalAmount = 0;
+
+      if (!isMobileView()) {
+        const rows = [...itemsBody.querySelectorAll("tr")].filter(r => !r.classList.contains("summary-row"));
+        items = rows.map((row, idx) => {
+          const productCode = (row.querySelector(".name").innerText || "").trim();
+          const size = (row.querySelector(".size").innerText || "").trim();
+          const surface = (row.querySelector(".surface").innerText || "").trim();
+          const mrp = parseFloat((row.querySelector(".mrp").innerText || "0").replace(/,/g,"")) || 0;
+          const qty = parseFloat((row.querySelector(".qty").innerText || "0").replace(/,/g,"")) || 0;
+          const disc = parseFloat((row.querySelector(".disc").innerText || "0").replace(/,/g,"")) || 0;
+          const safeDisc = Math.min(100, Math.max(0, disc));
+          const discountedPrice = Math.max(0, mrp - (mrp * safeDisc / 100));
+          const lineTotal = qty * discountedPrice;
+          const comment = (row.querySelector(".rowcomment").innerText || "").trim();
+          return { srNo: idx + 1, productCode, size, surface, mrp, qty, disc: safeDisc, discountedPrice, lineTotal, comment };
+        }).filter(it => it.productCode);
+
+        totalAmount = parseFloat(totalAmountEl.innerText || "0") || 0;
+        specialDiscountType = discountTypeEl.value;
+        specialDiscountValue = parseFloat(specialDiscountEl.value || "0") || 0;
+        finalAmount = parseFloat(finalAmountEl.innerText || "0") || 0;
+      } else {
+        const cards = [...document.querySelectorAll("#mItems > .mcard")];
+        items = cards.map((c, idx) => {
+          const productCode = (c.querySelector(".m_code").value || "").trim();
+          const size = (c.querySelector(".m_size").value || "").trim();
+          const surface = (c.querySelector(".m_surface").value || "").trim();
+          const mrp = parseFloat(c.querySelector(".m_mrp").value || "0") || 0;
+          const qty = parseFloat(c.querySelector(".m_qty").value || "0") || 0;
+          const disc = parseFloat(c.querySelector(".m_disc").value || "0") || 0;
+          const safeDisc = Math.min(100, Math.max(0, disc));
+          const discountedPrice = Math.max(0, mrp - (mrp * safeDisc / 100));
+          const lineTotal = qty * discountedPrice;
+          const comment = (c.querySelector(".m_comment").value || "").trim();
+          return { srNo: idx + 1, productCode, size, surface, mrp, qty, disc: safeDisc, discountedPrice, lineTotal, comment };
+        }).filter(it => it.productCode);
+
+        totalAmount = parseFloat(mTotalAmountEl.textContent || "0") || 0;
+        specialDiscountType = mDiscountTypeEl.value;
+        specialDiscountValue = parseFloat(mSpecialDiscountEl.value || "0") || 0;
+        finalAmount = parseFloat(mFinalAmountEl.textContent || "0") || 0;
+      }
+
+      if (!items.length) {
+        const msg = "Please add at least 1 item";
+        if (isMobileView()) { mMsgEl.textContent = msg; mMsgEl.style.color = "#b91c1c"; }
+        notify(msg);
+        return;
+      }
+
+      for (let i = 0; i < items.length; i++) {
+        if (!(items[i].qty > 0)) {
+          const msg = "Qty must be > 0 in row " + (i + 1);
+          if (isMobileView()) { mMsgEl.textContent = msg; mMsgEl.style.color = "#b91c1c"; }
+          notify(msg);
+          return;
+        }
+      }
+
+      const payload = {
+        quotationNo, date, customerName, mobile, town,
+        reference, salesperson, salesMobile,
+        totalAmount, specialDiscountType, specialDiscountValue, finalAmount,
+        status: "Draft",
+        items
+      };
+
+      // UI lock
+      const btnSave = document.getElementById("btnSave");
+      const mBtnSave = document.getElementById("mBtnSave");
+      if (btnSave) btnSave.disabled = true;
+      if (mBtnSave) mBtnSave.disabled = true;
+
+      const r = await apiPost({ action: "saveQuotation", payload });
+
+      if (btnSave) btnSave.disabled = false;
+      if (mBtnSave) mBtnSave.disabled = false;
+
+      if (!r || !r.ok) {
+        const em = "Error: " + (r && r.error ? r.error : "Failed");
+        if (isMobileView()) { mMsgEl.textContent = em; mMsgEl.style.color = "#b91c1c"; }
+        notify(em);
+        return;
+      }
+
+      if (isMobileView()) { mMsgEl.textContent = "Saved"; mMsgEl.style.color = "#166534"; }
+      notify("Saved Successfully!");
+    }
+
+    function doPrint() {
+      try {
+        if (document.activeElement) document.activeElement.blur();
+        setTimeout(() => window.print(), 0);
+      } catch (e) {
+        window.print();
+      }
+    }
+
+    // Bind buttons
+    document.getElementById("btnAddRow").addEventListener("click", addRow);
+    document.getElementById("btnSave").addEventListener("click", saveQuotation);
+    document.getElementById("btnPrint").addEventListener("click", doPrint);
+
+    document.getElementById("mBtnAdd").addEventListener("click", mAddItem);
+    document.getElementById("mBtnSave").addEventListener("click", saveQuotation);
+    document.getElementById("mBtnPrint").addEventListener("click", doPrint);
+
+    // Expose to window (extra safe)
+    window.addRow = addRow;
+    window.saveQuotation = saveQuotation;
+    window.doPrint = doPrint;
+    window.calculateFinal = calculateFinal;
+    window.mAddItem = mAddItem;
+
+    // Init
+    (async function init(){
+      try { await loadRawData(); } catch(e) { console.error(e); notify("Raw load failed"); }
+      try { await initHeader(); } catch(e) { console.error(e); notify("Header init failed"); }
+
+      // Start with 1 item on both views
+      addRow();
+      mAddItem();
+      calculateTotal();
+      mCalcTotal();
+    })();
   </script>
 </body>
 </html>
