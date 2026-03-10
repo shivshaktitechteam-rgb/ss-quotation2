@@ -1,6 +1,6 @@
 // api.js (FULL REPLACE)
 // Paste your Apps Script Web App URL here (ends with /exec)
-const API_BASE = "https://script.google.com/macros/s/AKfycbz7MZBswelTi1Wm5jeOVDnUbe3DzE5LcqBJ0qO478s3dwErNSWF2gGoYjcad9ttbmsupQ/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbzAl06gMaVYEZ5ruHZSOTyXoveI89kmdiAZ7XzYKdj8F6XZUp4DG8qnW-12bmfcyvG5kg/exec";
 
 // ---------- JSONP GET (CORS safe) ----------
 function apiGet(params) {
