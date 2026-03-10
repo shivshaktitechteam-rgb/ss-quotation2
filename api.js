@@ -1,93 +1,63 @@
-// api.js (FULL REPLACE)
-// Paste your Apps Script Web App URL here (ends with /exec)
-const API_BASE = "https://script.google.com/macros/s/AKfycbzAl06gMaVYEZ5ruHZSOTyXoveI89kmdiAZ7XzYKdj8F6XZUp4DG8qnW-12bmfcyvG5kg/exec";
+// api.js (JSONP for BOTH GET + "POST" actions)
+// Works on GitHub Pages without CORS and without postMessage.
 
-// ---------- JSONP GET (CORS safe) ----------
-function apiGet(params) {
+const API_BASE = "https://script.google.com/macros/s/AKfycbza-YJ3gzUcYu0untIx9yLfQEBcyLDGWcUKG_ohMNUF6L5D_CSF19arXTCfVCF1-N75Sw/exec";
+
+// ---- JSONP helper ----
+function _jsonp(params) {
   return new Promise((resolve, reject) => {
-    try {
-      const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
-      params = params || {};
-      params.callback = cb;
+    const cb = "cb_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
 
-      const url = API_BASE + "?" + new URLSearchParams(params).toString();
+    const timer = setTimeout(() => {
+      try { delete window[cb]; } catch (e) {}
+      reject(new Error("API JSONP timeout"));
+    }, 20000);
 
-      window[cb] = (data) => {
-        try {
-          delete window[cb];
-          script.remove();
-        } catch (e) {}
-        resolve(data);
-      };
+    window[cb] = (resp) => {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch (e) {}
+      resolve(resp);
+    };
 
-      const script = document.createElement("script");
-      script.src = url;
-      script.onerror = () => {
-        try { delete window[cb]; } catch (e) {}
-        reject(new Error("API GET failed"));
-      };
-      document.head.appendChild(script);
-    } catch (err) {
-      reject(err);
-    }
+    const qs = new URLSearchParams();
+    Object.keys(params || {}).forEach((k) => {
+      const v = params[k];
+      if (v === undefined || v === null) return;
+
+      // Objects/arrays -> JSON string
+      if (typeof v === "object") qs.set(k, JSON.stringify(v));
+      else qs.set(k, String(v));
+    });
+
+    qs.set("callback", cb);
+    qs.set("_ts", String(Date.now())); // cache bust
+
+    const s = document.createElement("script");
+    s.src = API_BASE + "?" + qs.toString();
+    s.onerror = () => {
+      clearTimeout(timer);
+      try { delete window[cb]; } catch (e) {}
+      reject(new Error("API JSONP network error"));
+    };
+
+    document.body.appendChild(s);
+
+    // Cleanup
+    s.onload = () => {
+      setTimeout(() => {
+        if (s && s.parentNode) s.parentNode.removeChild(s);
+      }, 1500);
+    };
   });
 }
 
-// ---------- POST via hidden iframe + postMessage (CORS safe) ----------
-function apiPost(data) {
-  return new Promise((resolve, reject) => {
-    try {
-      // Create iframe once
-      let iframe = document.getElementById("api_iframe");
-      if (!iframe) {
-        iframe = document.createElement("iframe");
-        iframe.id = "api_iframe";
-        iframe.name = "api_iframe";
-        iframe.style.display = "none";
-        document.body.appendChild(iframe);
-      }
+// Public functions used by your HTML pages
+async function apiGet(params) {
+  return await _jsonp(params);
+}
 
-      // Create form
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = API_BASE;
-      form.target = "api_iframe";
-      form.style.display = "none";
-
-      // Put request JSON in one field
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = "payload";
-      const req = Object.assign({}, data || {});
-      req.responseMode = "postMessage";
-      input.value = JSON.stringify(req);
-      form.appendChild(input);
-
-      document.body.appendChild(form);
-
-      // Listen for reply
-      const timer = setTimeout(() => {
-        window.removeEventListener("message", onMsg);
-        try { form.remove(); } catch (e) {}
-        reject(new Error("API POST timeout"));
-      }, 20000);
-
-      function onMsg(ev) {
-        // Apps Script will post message with {ok:true/false,...}
-        if (!ev || !ev.data || typeof ev.data !== "object") return;
-        if (ev.data.__fromAppsScript !== true) return;
-
-        clearTimeout(timer);
-        window.removeEventListener("message", onMsg);
-        try { form.remove(); } catch (e) {}
-        resolve(ev.data.response);
-      }
-
-      window.addEventListener("message", onMsg);
-
-      form.submit();
-    } catch (err) {
-      reject(err);
-    }
-  });
+async function apiPost(params) {
+  // We keep the same name apiPost(), but internally use JSONP GET.
+  // params may include: action, payload, quotationNo, status, etc.
+  return await _jsonp(params);
 }
