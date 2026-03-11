@@ -35,11 +35,10 @@
     .btn-add { background: #28a745; color: #fff; }
     .btn-remove { background: #dc3545; color: #fff; }
     .btn-print { background: #007bff; color: #fff; }
+
     /* Save button states */
-.btn-saving { background: #9ca3af !important;   /* grey */
-  cursor: not-allowed !important; opacity: 0.9; }
-.btn-saved { background: #16a34a !important;   /* green */ }
-    
+    .btn-saving { background: #9ca3af !important; cursor: not-allowed !important; opacity: 0.9; }
+    .btn-saved { background: #16a34a !important; }
 
     .summary-row { font-weight: bold; }
     .discount-cell { text-align: right; font-weight: bold; }
@@ -164,9 +163,9 @@
         </tbody>
       </table>
 
-      <button class="btn btn-add" id="btnAddRow">+ Add Item</button>
-      <button class="btn btn-save" id="btnSave">Save Quotation</button>
-      <button class="btn btn-print" id="btnPrint">Print Quotation</button>
+      <button class="btn btn-add" id="btnAddRow" type="button">+ Add Item</button>
+      <button class="btn btn-save" id="btnSave" type="button">Save Quotation</button>
+      <button class="btn btn-print" id="btnPrint" type="button">Print Quotation</button>
     </div>
 
     <div class="mobile-only">
@@ -213,16 +212,16 @@
   </div>
 
   <div class="mbtnbar">
-    <button class="btn btn-add" id="mBtnAdd">Add</button>
-    <button class="btn btn-save" id="mBtnSave">Save</button>
-    <button class="btn btn-print" id="mBtnPrint">Print</button>
+    <button class="btn btn-add" id="mBtnAdd" type="button">Add</button>
+    <button class="btn btn-save" id="mBtnSave" type="button">Save</button>
+    <button class="btn btn-print" id="mBtnPrint" type="button">Print</button>
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite">Saved</div>
 
-  <script src="api.js?v=20260310_02"></script>
+  <script src="api.js?v=20260311_fix1"></script>
   <script>
-    console.log("Quotation page loaded: SAFE_FULL_VERSION_2026-03-10_01");
+    console.log("Quotation page loaded: SAFE_FIXED_FULL_2026-03-11");
 
     // ---- Globals
     let sheetData = [];
@@ -251,6 +250,10 @@
 
     function isMobileView() {
       return window.matchMedia("(max-width: 820px)").matches;
+    }
+
+    function sleep(ms) {
+      return new Promise(res => setTimeout(res, ms));
     }
 
     async function loadRawData() {
@@ -532,48 +535,51 @@
     mDiscountTypeEl.addEventListener("change", mCalculateFinal);
     mSpecialDiscountEl.addEventListener("input", mCalculateFinal);
 
+    // ---------- Save button state helpers
     function setSaveButtonsState(state, label) {
-  const btns = document.querySelectorAll("button.btn-save");
-  btns.forEach(btn => {
-    if (!btn.dataset.origText) btn.dataset.origText = btn.textContent;
+      const btns = document.querySelectorAll("button.btn-save");
+      btns.forEach(btn => {
+        if (!btn.dataset.origText) btn.dataset.origText = btn.textContent;
 
-    // remove both state classes first
-    btn.classList.remove("btn-saving");
-    btn.classList.remove("btn-saved");
-
-    if (state === "saving") {
-      btn.disabled = true;
-      btn.classList.add("btn-saving");
-      btn.textContent = label || "Saving...";
-      return;
-    }
-
-    if (state === "saved") {
-      btn.disabled = false;
-      btn.classList.add("btn-saved");
-      btn.textContent = label || "Saved ✅";
-      // revert after 1.5s
-      setTimeout(() => {
+        btn.classList.remove("btn-saving");
         btn.classList.remove("btn-saved");
+
+        if (state === "saving") {
+          btn.disabled = true;
+          btn.classList.add("btn-saving");
+          btn.textContent = label || "Saving...";
+          return;
+        }
+
+        if (state === "saved") {
+          btn.disabled = false;
+          btn.classList.add("btn-saved");
+          btn.textContent = label || "Saved ✅";
+          setTimeout(() => {
+            btn.classList.remove("btn-saved");
+            btn.textContent = btn.dataset.origText || "Save";
+          }, 1500);
+          return;
+        }
+
+        btn.disabled = false;
         btn.textContent = btn.dataset.origText || "Save";
-      }, 1500);
-      return;
+      });
     }
 
-    // normal
-    btn.disabled = false;
-    btn.textContent = btn.dataset.origText || "Save";
-  });
-}
+    async function verifyQuotationSaved(quotationNo) {
+      // Retry a few times (Sheets sometimes takes a moment)
+      for (let i = 0; i < 3; i++) {
+        try {
+          const vr = await apiPost({ action: "quotationData", quotationNo });
+          const ok = !!(vr && vr.ok && vr.data && vr.data.header && String(vr.data.header.quotationNo || "") === String(quotationNo));
+          if (ok) return true;
+        } catch (e) {}
+        await sleep(400);
+      }
+      return false;
+    }
 
-async function verifyQuotationSaved(quotationNo) {
-  try {
-    const vr = await apiPost({ action: "quotationData", quotationNo });
-    return !!(vr && vr.ok && vr.data && vr.data.header && String(vr.data.header.quotationNo || "") === String(quotationNo));
-  } catch (e) {
-    return false;
-  }
-}
     // ---------- Save + Print
     async function saveQuotation() {
       const quotationNo = document.getElementById("quotationNo").value.trim();
@@ -664,32 +670,23 @@ async function verifyQuotationSaved(quotationNo) {
         items
       };
 
-      // UI lock
-     setSaveButtonsState("saving", "Saving...");
+      setSaveButtonsState("saving", "Saving...");
 
-try {
-  const r = await apiPost({ action: "saveQuotation", payload });
+      try {
+        const r = await apiPost({ action: "saveQuotation", payload });
+        if (!r || !r.ok) throw new Error((r && r.error) ? r.error : "Save failed");
 
-  if (!r || !r.ok) {
-    throw new Error((r && r.error) ? r.error : "Save failed");
-  }
+        const verified = await verifyQuotationSaved(payload.quotationNo);
+        if (verified) notify("Saved & Verified ✅");
+        else notify("Saved ✅ (not verified)");
 
-  // ✅ Verify it actually saved (read back from Google Sheet)
-  const verified = await verifyQuotationSaved(payload.quotationNo);
-
-  if (verified) {
-    notify("Saved & Verified ✅");
-  } else {
-    notify("Saved ✅ (not verified)");
-  }
-
-  setSaveButtonsState("saved", verified ? "Saved ✅" : "Saved ✅");
-
-} catch (err) {
-  console.error(err);
-  notify("Error: " + (err && err.message ? err.message : err));
-  setSaveButtonsState("normal");
-}
+        setSaveButtonsState("saved", "Saved ✅");
+      } catch (err) {
+        console.error(err);
+        notify("Error: " + (err && err.message ? err.message : err));
+        setSaveButtonsState("normal");
+      }
+    }
 
     function doPrint() {
       try {
