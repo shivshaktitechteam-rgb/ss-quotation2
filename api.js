@@ -58,6 +58,5 @@ async function apiGet(params) {
 
 async function apiPost(params) {
   // We keep the same name apiPost(), but internally use JSONP GET.
-  // params may include: action, payload, quotationNo, status, etc.
   return await _jsonp(params);
 }
