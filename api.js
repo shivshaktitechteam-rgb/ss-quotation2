@@ -1,5 +1,5 @@
 // api.js (JSONP for BOTH GET + "POST" actions)
-// Works on GitHub Pages without CORS and without postMessage.
+// GitHub Pages safe: NO postMessage, NO CORS fetch
 
 const API_BASE = "https://script.google.com/macros/s/AKfycbza-YJ3gzUcYu0untIx9yLfQEBcyLDGWcUKG_ohMNUF6L5D_CSF19arXTCfVCF1-N75Sw/exec";
 
@@ -23,8 +23,6 @@ function _jsonp(params) {
     Object.keys(params || {}).forEach((k) => {
       const v = params[k];
       if (v === undefined || v === null) return;
-
-      // Objects/arrays -> JSON string
       if (typeof v === "object") qs.set(k, JSON.stringify(v));
       else qs.set(k, String(v));
     });
@@ -42,7 +40,7 @@ function _jsonp(params) {
 
     document.body.appendChild(s);
 
-    // Cleanup
+    // cleanup
     s.onload = () => {
       setTimeout(() => {
         if (s && s.parentNode) s.parentNode.removeChild(s);
@@ -51,12 +49,12 @@ function _jsonp(params) {
   });
 }
 
-// Public functions used by your HTML pages
+// Public helpers (keep same names used in your HTML)
 async function apiGet(params) {
   return await _jsonp(params);
 }
 
 async function apiPost(params) {
-  // We keep the same name apiPost(), but internally use JSONP GET.
+  // Still JSONP internally (GET), but your UI can call it as "post"
   return await _jsonp(params);
 }
