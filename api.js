@@ -1,7 +1,7 @@
 // api.js (JSONP for BOTH GET + "POST" actions)
 // GitHub Pages safe: NO postMessage, NO CORS fetch
 
-const API_BASE = "https://script.google.com/macros/s/AKfycbza-YJ3gzUcYu0untIx9yLfQEBcyLDGWcUKG_ohMNUF6L5D_CSF19arXTCfVCF1-N75Sw/exec";
+const API_BASE = "https://script.google.com/macros/s/AKfycbw6Maa-4x2uZutK_g_mIZaFK00XLJF_YBanGshKUl4s8MmVccehRxRDX0zOoEIEWHoMtA/exec";
 
 // ---- JSONP helper ----
 function _jsonp(params) {
