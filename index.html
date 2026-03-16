@@ -1,93 +1,141 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Business Dashboard</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#f7f7f7; }
+    .container { max-width: 1200px; margin: 20px auto; background:#fff; padding:18px; border-radius:16px; box-shadow:0 0 10px rgba(0,0,0,.10); }
+    .topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .title { font-size: 24px; font-weight: 900; margin:0; }
+    .subtitle { font-size:14px; color:#6b7280; margin-top:3px; font-weight:700; }
+
+    .btn { padding:10px 14px; border:none; border-radius:14px; cursor:pointer; font-weight:900; font-size:14px; }
+    .btn-refresh { background:#fff; border:1px solid #ddd; }
+
+    .cards {
+      margin-top:16px;
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap:12px;
+    }
+    .card { border:1px solid #e5e5e5; border-radius:14px; padding:14px; background:#fff; }
+    .card .label { font-size:13px; color:#6b7280; font-weight:800; }
+    .card .value { font-size:28px; font-weight:900; margin-top:6px; }
+
+    .actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+    .a { padding:12px 16px; border:none; border-radius:14px; cursor:pointer; font-weight:900; font-size:16px; }
+    .green { background:#16a34a; color:#fff; }
+    .black { background:#111827; color:#fff; }
+    .orange { background:#f59e0b; color:#fff; }
+    .blue { background:#2563eb; color:#fff; }
+    .purple { background:#7c3aed; color:#fff; }
+
+    .footer { margin-top:14px; color:#6b7280; font-size:13px; font-weight:700; }
+
+    .toast { position:fixed; right:20px; bottom:20px; max-width:360px; padding:10px 14px;
+      border-radius:10px; background:#16a34a; color:#fff; font-size:14px; line-height:1.4;
+      box-shadow:0 8px 24px rgba(0,0,0,0.15); opacity:0; transform:translateY(10px);
+      pointer-events:none; transition:opacity .18s ease, transform .18s ease; z-index:9999; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast.error { background:#b91c1c; }
+
+    @media (max-width: 920px) {
+      .container { margin:0; border-radius:0; }
+      .a { flex:1; min-width: 150px; }
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <div class="topbar">
       <div>
         <div class="title">Shivshakti Marble & Granite</div>
-        <div class="sub">Phase 1 Dashboard (Quotation → Invoice → Dispatch)</div>
+        <div class="subtitle">Business Dashboard (Quotation → Challan → Invoice → Dispatch)</div>
       </div>
-      <button class="btn ghost" onclick="loadDashboard()">Refresh</button>
+      <button class="btn btn-refresh" id="btnRefresh" type="button">Refresh</button>
     </div>
 
-    <div class="grid">
-      <div class="card">
-        <div class="label">Quotations (Last 30 Days)</div>
-        <div class="value" id="q_total">0</div>
-      </div>
-      <div class="card">
-        <div class="label">Pending Quotations</div>
-        <div class="value" id="q_pending">0</div>
-      </div>
-      <div class="card">
-        <div class="label">Converted Quotations</div>
-        <div class="value" id="q_converted">0</div>
-      </div>
-      <div class="card">
-        <div class="label">Cancelled / Expired</div>
-        <div class="value" id="q_cancelled">0</div>
-      </div>
+    <div class="cards">
+      <div class="card"><div class="label">Quotations (Last 30 Days)</div><div class="value" id="qTotal">—</div></div>
+      <div class="card"><div class="label">Pending Quotations</div><div class="value" id="qPending">—</div></div>
+      <div class="card"><div class="label">Converted Quotations</div><div class="value" id="qConverted">—</div></div>
+      <div class="card"><div class="label">Cancelled / Expired</div><div class="value" id="qBad">—</div></div>
 
-      <div class="card">
-        <div class="label">Invoices (Last 30 Days)</div>
-        <div class="value" id="s_total">0</div>
-      </div>
-      <div class="card">
-        <div class="label">Sales Amount (Last 30 Days)</div>
-        <div class="value" id="s_amount">0.00</div>
-      </div>
-      <div class="card">
-        <div class="label">Dispatch Delayed</div>
-        <div class="value" id="d_delayed">0</div>
-      </div>
-      <div class="card">
-        <div class="label">Dispatch On-time (Delivered)</div>
-        <div class="value" id="d_ontime">0</div>
-      </div>
+      <div class="card"><div class="label">Challans (Last 30 Days)</div><div class="value" id="cTotal">—</div></div>
+      <div class="card"><div class="label">Dispatch Delayed</div><div class="value" id="cDelayed">—</div></div>
+      <div class="card"><div class="label">Dispatch On-time (Delivered)</div><div class="value" id="cOntime">—</div></div>
+
+      <div class="card"><div class="label">Invoices (Last 30 Days)</div><div class="value" id="invTotal">—</div></div>
+      <div class="card"><div class="label">Sales Amount (Last 30 Days)</div><div class="value" id="invAmt">—</div></div>
     </div>
 
-    <div class="nav">
-      <a class="btn green" href="quotation.html">+ New Quotation</a>
-      <a class="btn dark" href="quotations.html">Quotations</a>
-      <a class="btn orange" href="sale.html">Create Invoice</a>
-      <a class="btn blue" href="dispatch.html">Dispatch</a>
+    <div class="actions">
+      <button class="a green" onclick="location.href='quotation.html'">+ New Quotation</button>
+      <button class="a black" onclick="location.href='quotations.html'">Quotations</button>
+
+      <button class="a purple" onclick="location.href='challan.html'">+ New Challan</button>
+      <button class="a blue" onclick="location.href='challans.html'">Challans / Dispatch</button>
+
+      <button class="a orange" onclick="location.href='sale.html'">Invoices</button>
     </div>
 
-    <div class="sub" style="margin-top:12px">Last updated: <span id="updatedAt">-</span></div>
+    <div class="footer" id="lastUpdated">Last updated: —</div>
   </div>
 
-  <div id="toast" class="toast">Done</div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
- <script src="api.js?v=20260311"></script>
-  <script src="app.js"></script>
+  <script src="api.js?v=20260316_01"></script>
   <script>
-    async function loadDashboard(){
-      try{
-        const r = await apiGet({action:"dashboard"});
-        if(!r || !r.ok) throw new Error(r && r.error ? r.error : "Failed");
-        const d = r.data || {};
-        document.getElementById("q_total").textContent = d.quotes_last30_total || 0;
-        document.getElementById("q_pending").textContent = d.quotes_pending || 0;
-        document.getElementById("q_converted").textContent = d.quotes_converted || 0;
-        document.getElementById("q_cancelled").textContent = (d.quotes_cancelled || 0) + (d.quotes_expired || 0);
-        document.getElementById("s_total").textContent = d.invoices_last30_total || 0;
-        document.getElementById("s_amount").textContent = fmt2(d.invoices_last30_amount || 0);
-        document.getElementById("d_delayed").textContent = d.dispatch_delayed || 0;
-        document.getElementById("d_ontime").textContent = d.dispatch_ontime || 0;
-        document.getElementById("updatedAt").textContent = new Date().toLocaleString();
-        notify("Dashboard updated");
-      }catch(e){
-        console.error(e);
-        notify("Dashboard error: " + e.message, false);
-      }
+    function $(id){ return document.getElementById(id); }
+
+    function notify(msg, isError=false, timeout=2200){
+      const t = $("toast");
+      t.textContent = msg;
+      t.className = "toast show" + (isError ? " error" : "");
+      clearTimeout(notify._timer);
+      notify._timer = setTimeout(()=>{ t.className = "toast"; }, timeout);
     }
-    loadDashboard();
+
+    function fmtMoney(n){
+      const x = Number(n || 0);
+      return (isFinite(x) ? x : 0).toFixed(2);
+    }
+
+    async function loadDashboard(){
+      const r = await apiGet({ action:"dashboard" });
+      if (!r || !r.ok) throw new Error((r && r.error) ? r.error : "Dashboard load failed");
+
+      const d = r.data || {};
+
+      $("qTotal").textContent = String(d.quotes_last30_total ?? 0);
+      $("qPending").textContent = String(d.quotes_pending ?? 0);
+      $("qConverted").textContent = String(d.quotes_converted ?? 0);
+
+      const bad = (Number(d.quotes_cancelled || 0) + Number(d.quotes_expired || 0));
+      $("qBad").textContent = String(bad);
+
+      $("cTotal").textContent = String(d.dispatch_total ?? 0);
+      $("cDelayed").textContent = String(d.dispatch_delayed ?? 0);
+      $("cOntime").textContent = String(d.dispatch_ontime ?? 0);
+
+      $("invTotal").textContent = String(d.invoices_last30_total ?? 0);
+      $("invAmt").textContent = fmtMoney(d.invoices_last30_amount ?? 0);
+
+      $("lastUpdated").textContent = "Last updated: " + new Date().toLocaleString();
+    }
+
+    $("btnRefresh").addEventListener("click", ()=>location.reload());
+
+    (async function init(){
+      try {
+        await loadDashboard();
+      } catch(e){
+        console.error(e);
+        notify("Error: " + (e.message || e), true);
+      }
+    })();
   </script>
 </body>
 </html>
